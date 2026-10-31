@@ -1,0 +1,6 @@
+{
+  "name": "EdgeLink SEO Automation Dashboard",
+  "description": "Production-grade automated SEO audit pipeline with Admin and Client portals, Claude AI recommendations, real-time job tracking, and PDF reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,117 @@
+// Prisma schema for EdgeLink Technology SEO Automation Dashboard
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum AuditStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(CLIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  client    Client?
+}
+
+model Client {
+  id          String    @id @default(uuid())
+  companyName String
+  contactName String
+  email       String    @unique
+  phone       String
+  industry    String    // Healthcare, Dental, Real Estate, Local Business
+  userId      String?   @unique
+  user        User?     @relation(fields: [userId], references: [id])
+  websites    Website[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Website {
+  id        String   @id @default(uuid())
+  url       String
+  clientId  String
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  audits    Audit[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Audit {
+  id             String          @id @default(uuid())
+  websiteId      String
+  website        Website         @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  status         AuditStatus     @default(PENDING)
+  currentStage   Int             @default(0)
+  stageName      String          @default("Queued")
+  progress       Int             @default(0)
+  overallScore   Int?
+  techScore      Int?
+  onPageScore    Int?
+  contentScore   Int?
+  cwvScore       Int?
+  schemaScore    Int?
+  rawCrawlData   String?         // JSON stringified crawl extraction
+  aiResponse     String?         // JSON stringified Claude audit response
+  errorMessage   String?
+  jobId          String?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  recommendations Recommendation[]
+  report         Report?
+  notifications  Notification[]
+}
+
+model Recommendation {
+  id                  String   @id @default(uuid())
+  auditId             String
+  audit               Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  type                String   // CRITICAL, IMPORTANT, QUICK_WIN, GENERAL
+  category            String   // Technical, On-page, Content, Core Web Vitals, Schema
+  finding             String
+  fix                 String
+  estimatedImpact     String   // High, Medium, Low
+  effort              String   // Hours, Days, Weeks
+  falsifiabilityCheck String
+  createdAt           DateTime @default(now())
+}
+
+model Report {
+  id        String   @id @default(uuid())
+  auditId   String   @unique
+  audit     Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  pdfPath   String?
+  fileSize  Int?
+  createdAt DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  auditId   String
+  audit     Audit    @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  channel   String   // WHATSAPP, EMAIL
+  recipient String
+  status    String   // SENT, FAILED
+  payload   String   // JSON string
+  sentAt    DateTime @default(now())
+}
